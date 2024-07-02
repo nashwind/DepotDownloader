@@ -180,6 +180,55 @@ namespace DepotDownloader
             return uint.Parse(buildid.Value);
         }
 
+        public static ulong DecryptManifestID(uint appId, string branch, string encrypted_manifest)
+        {
+            var password = Config.BetaPassword;
+            while (string.IsNullOrEmpty(password))
+            {
+                Console.Write("Please enter the password for branch {0}: ", branch);
+                Config.BetaPassword = password = Console.ReadLine();
+            }
+
+            // Submit the password to Steam now to get encryption keys
+            steam3.CheckAppBetaPassword(appId, Config.BetaPassword);
+
+            if (!steam3.AppBetaPasswords.TryGetValue(branch, out var appBetaPassword))
+            {
+                Console.WriteLine("Password was invalid for branch {0}", branch);
+                return INVALID_MANIFEST_ID;
+            }
+
+            Console.WriteLine("Attempting to Decrypt Manifest: [" + encrypted_manifest + "]");
+            var input = Util.DecodeHexString(encrypted_manifest);
+            byte[] manifest_bytes;
+            try
+            {
+                manifest_bytes = CryptoHelper.SymmetricDecryptECB(input, appBetaPassword);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to decrypt branch {0}: {1}", branch, e.Message);
+                return INVALID_MANIFEST_ID;
+            }
+
+            Console.WriteLine("Successfully decrypted!");
+
+            return BitConverter.ToUInt64(manifest_bytes, 0);
+        }
+
+        static void KeyValueToString(KeyValue input, string prefix, ref string output)
+        {
+            output += prefix + input.ToString() + "\n";
+
+            foreach (var child in input.Children)
+            {
+                if (child != KeyValue.Invalid)
+                {
+                    KeyValueToString(child, prefix + "    ", ref output);
+                }
+            }
+        }
+
         static ulong GetSteam3DepotManifest(uint depotId, uint appId, string branch)
         {
             var depots = GetSteam3AppSection(appId, EAppInfoSection.Depots);
@@ -187,6 +236,10 @@ namespace DepotDownloader
 
             if (depotChild == KeyValue.Invalid)
                 return INVALID_MANIFEST_ID;
+
+            var debugText = "";
+            KeyValueToString(depotChild, "", ref debugText);
+            Console.WriteLine("Depot Child: " + debugText);
 
             // Shared depots can either provide manifests, or leave you relying on their parent app.
             // It seems that with the latter, "sharedinstall" will exist (and equals 2 in the one existance I know of).
@@ -240,6 +293,7 @@ namespace DepotDownloader
                             return INVALID_MANIFEST_ID;
                         }
 
+                        Console.WriteLine("Attempting to Decrypt Manifest: [" + encrypted_gid.Value + "]");
                         var input = Util.DecodeHexString(encrypted_gid.Value);
                         byte[] manifest_bytes;
                         try
@@ -251,6 +305,8 @@ namespace DepotDownloader
                             Console.WriteLine("Failed to decrypt branch {0}: {1}", branch, e.Message);
                             return INVALID_MANIFEST_ID;
                         }
+
+                        Console.WriteLine("Successfully decrypted!");
 
                         return BitConverter.ToUInt64(manifest_bytes, 0);
                     }

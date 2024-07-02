@@ -220,6 +220,21 @@ namespace DepotDownloader
 
                 var depotIdList = GetParameterList<uint>(args, "-depot");
                 var manifestIdList = GetParameterList<ulong>(args, "-manifest");
+                var eManifestIdList = GetParameterList<string>(args, "-emanifest");
+
+                if (!InitializeSteam(username, password))
+                {
+                    Console.WriteLine("Error: InitializeSteam failed");
+                    return 1;
+                }
+                if (eManifestIdList.Count > 0)
+                {
+                    foreach (var manifest in eManifestIdList)
+                    {
+                        manifestIdList.Add(ContentDownloader.DecryptManifestID(appId, branch, manifest));
+                    }
+                }
+
                 if (manifestIdList.Count > 0)
                 {
                     if (depotIdList.Count != manifestIdList.Count)
@@ -235,34 +250,25 @@ namespace DepotDownloader
                 {
                     depotManifestIds.AddRange(depotIdList.Select(depotId => (depotId, ContentDownloader.INVALID_MANIFEST_ID)));
                 }
-
-                if (InitializeSteam(username, password))
+                try
                 {
-                    try
-                    {
-                        await ContentDownloader.DownloadAppAsync(appId, depotManifestIds, branch, os, arch, language, lv, isUGC).ConfigureAwait(false);
-                    }
-                    catch (Exception ex) when (
-                        ex is ContentDownloaderException
-                        || ex is OperationCanceledException)
-                    {
-                        Console.WriteLine(ex.Message);
-                        return 1;
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine("Download failed to due to an unhandled exception: {0}", e.Message);
-                        throw;
-                    }
-                    finally
-                    {
-                        ContentDownloader.ShutdownSteam3();
-                    }
+                    await ContentDownloader.DownloadAppAsync(appId, depotManifestIds, branch, os, arch, language, lv, isUGC).ConfigureAwait(false);
                 }
-                else
+                catch (Exception ex) when (
+                    ex is ContentDownloaderException
+                    || ex is OperationCanceledException)
                 {
-                    Console.WriteLine("Error: InitializeSteam failed");
+                    Console.WriteLine(ex.Message);
                     return 1;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Download failed to due to an unhandled exception: {0}", e.Message);
+                    throw;
+                }
+                finally
+                {
+                    ContentDownloader.ShutdownSteam3();
                 }
 
                 #endregion
@@ -380,6 +386,7 @@ namespace DepotDownloader
             Console.WriteLine("\t-app <#>\t\t\t\t- the AppID to download.");
             Console.WriteLine("\t-depot <#>\t\t\t\t- the DepotID to download.");
             Console.WriteLine("\t-manifest <id>\t\t\t- manifest id of content to download (requires -depot, default: current for branch).");
+            Console.WriteLine("\t-emanifest <id>\t\t\t- encrypted manifest id of content to download (requires -depot, default: current for branch).");
             Console.WriteLine($"\t-beta <branchname>\t\t\t- download from specified branch if available (default: {ContentDownloader.DEFAULT_BRANCH}).");
             Console.WriteLine("\t-betapassword <pass>\t\t- branch password if applicable.");
             Console.WriteLine("\t-all-platforms\t\t\t- downloads all platform-specific depots when -app is used.");
