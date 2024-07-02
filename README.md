@@ -7,7 +7,12 @@ Steam depot downloader utilizing the SteamKit2 library. Supports .NET 8.0
 ```
 DepotDownloader.exe -app 892970 -depot 892972 -emanifest <manifest_id_in_quotes>
     -beta public-test -betapassword "yesimadebackups" -dir <path_to_save_downloads>
-    -username <steam_username> -remember-password
+    -username <steam_username> -remember-password -filelist <path_to_filelist.txt>
+```
+
+If you just want to download the .dlls for diffing or other purposes, use the -filelist parameter and point it to a text file that looks like this:
+```
+regex:^valheim_Data/Managed/.*$
 ```
 
 An example of an encrypted manifest might be like: "4736AC4BF941FA593BAA557FE74A94AD".
@@ -15,7 +20,19 @@ An example of an encrypted manifest might be like: "4736AC4BF941FA593BAA557FE74A
 You can find this ID by going to https://steamdb.info/app/892970/history/ and scrolling down to the patch that matches. For example, the above ID of "4736AC4BF941FA593BAA557FE74A94AD" is from:
 ![img.png](img.png)
 
-The relevant changelist is always right below the text about the update, and you want to grab the Green manifest ID on the right next to where it says `[Windows]`.
+For public builds (non-ptb) for Windows: https://steamdb.info/depot/892972/manifests/
+
+Just pull the manifest ID out of there. Date should make it clear which update.
+
+For PTB builds: https://steamdb.info/app/892970/history/
+
+You can see which build turns into which build. Red text is the previous manifest ID, Green text is the current manifest ID. Obviously look at the "Windows" one. So using that you can kind of track down which build is which based on the date.
+
+For example: `27EC567E4F7FAEE5AB208EB822FA4CD9` The green text for this is in Changelist #23532218 which was on May 14 2024.
+
+This is the same day Ashlands dropped. When this gets decrypted, it is 6520771666346535649 which is the exact same manifest ID as the live version. AKA PTB == Live. So if you look at the previous one (the red text in the same line): `4736AC4BF941FA593BAA557FE74A94AD`
+
+If you search for that with Ctrl + F, you find the previous Changelist which is on May 7th, which matches 0.218.14 PTB. This method can help you track down the order in which builds change, and then you can use my tool to get it.
 
 
 ### Downloading one or all depots for an app
