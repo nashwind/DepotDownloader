@@ -3,6 +3,21 @@ DepotDownloader
 
 Steam depot downloader utilizing the SteamKit2 library. Supports .NET 8.0
 
+### Download Valheim public-test for Windows
+```
+DepotDownloader.exe -app 892970 -depot 892972 -emanifest <manifest_id_in_quotes>
+    -beta public-test -betapassword "yesimadebackups" -dir <path_to_save_downloads>
+    -username <steam_username> -remember-password
+```
+
+An example of an encrypted manifest might be like: "4736AC4BF941FA593BAA557FE74A94AD".
+
+You can find this ID by going to https://steamdb.info/app/892970/history/ and scrolling down to the patch that matches. For example, the above ID of "4736AC4BF941FA593BAA557FE74A94AD" is from:
+![img.png](img.png)
+
+The relevant changelist is always right below the text about the update, and you want to grab the Green manifest ID on the right next to where it says `[Windows]`.
+
+
 ### Downloading one or all depots for an app
 ```
 dotnet DepotDownloader.dll -app <id> [-depot <id> [-manifest <id>]]
@@ -32,6 +47,7 @@ Parameter | Description
 -app \<#>				| the AppID to download.
 -depot \<#>				| the DepotID to download.
 -manifest \<id>			| manifest id of content to download (requires -depot, default: current for branch).
+-emanifest \<string_id> | encrypted manifest id of content to download (requires -depot ; is a string instead of an integer)
 -ugc \<#>				| the UGC ID to download.
 -beta \<branchname>		| download from specified branch if available (default: Public).
 -betapassword \<pass>	| branch password if applicable.
